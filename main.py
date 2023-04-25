@@ -3,12 +3,8 @@ import uuid
 from excel_converter import ExcelConverter
 from models.convert_param_model import ConvertParameters
 import main_converter
-from json import dumps
 from pathlib import Path
-import shutil
 from fastapi import FastAPI, File, UploadFile, HTTPException
-import aiofiles
-from json import dumps
 # This is a sample Python script.
 
 # Press ⌃R to execute it or replace it with your code.
