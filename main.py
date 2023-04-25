@@ -28,5 +28,8 @@ async def upload(uploaded_file: UploadFile):
     return {"file_name": file_name}
 @app.get("/headers/{file_name}")
 async def get_headers(file_name: str):
+    file_path = f"storage/{file_name}"
+    if not Path(file_path).exists():
+        raise HTTPException(status_code=400, detail="No such file or directory")
     converter = main_converter.Converter()
-    return converter.get_headers(f"storage/{file_name}")
+    return converter.get_headers(file_path=file_path)
