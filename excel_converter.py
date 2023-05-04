@@ -9,7 +9,7 @@ class ExcelConverter(ConverterInterface):
 
         json_string = excel_data_df.to_json(indent=4)
 
-        return json_string
+        return loads(json_string)
 
     def convert_to_json_with_parameters(self, file_path: str, parameters: ConvertParameters):
         excel_data_df = pandas.read_excel(file_path)

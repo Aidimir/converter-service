@@ -1,6 +1,6 @@
 from models.convert_param_model import ConvertParameters
 from pathlib import Path
-from json import dumps
+from json import dumps, loads
 import pandas
 from typing import Any, Iterable, List, Dict
 
@@ -31,7 +31,7 @@ class CsvConverter(ConverterInterface):
     def convert_to_json(self, file_path: str) -> str:
         csv_data_df = pandas.read_csv(file_path)
         json_str = csv_data_df.to_json(indent=4)
-        return json_str
+        return loads(json_str)
 
     def convert_to_json_with_parameters(self, file_path: str, parameters: ConvertParameters) -> str:
         csv_data_df = pandas.read_csv(file_path)
