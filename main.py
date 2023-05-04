@@ -3,8 +3,10 @@ import uuid
 from excel_converter import ExcelConverter
 from models.convert_param_model import ConvertParameters
 import main_converter
+from json import loads, dumps
 from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import FileResponse
 # This is a sample Python script.
 
 # Press ⌃R to execute it or replace it with your code.
@@ -33,3 +35,15 @@ async def get_headers(file_name: str):
         raise HTTPException(status_code=400, detail="No such file or directory")
     converter = main_converter.Converter()
     return converter.get_headers(file_path=file_path)
+
+@app.get("/convert_to_json/{file_name}")
+async def convert_to_json(file_name: str):
+    file_path = f"storage/{file_name}"
+    if not Path(file_path).exists():
+        raise HTTPException(status_code=400, detail="No such file or directory")
+    converter = main_converter.Converter()
+    str_json = converter.convert_to_json(file_path)
+    headers = {"detail": str_json}
+    with open(f"storage/{file_name}.json", "wb+") as outfile:
+        outfile.write(loads(str_json, indent=4))
+    return FileResponse(f"storage/{file_name}.json", headers=headers)

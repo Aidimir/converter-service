@@ -1,7 +1,7 @@
 from csv_converter import ConverterInterface
 from models.convert_param_model import ConvertParameters
 import pandas
-from json import dumps
+from json import dumps, loads
 
 class ExcelConverter(ConverterInterface):
     def convert_to_json(self, file_path: str):
