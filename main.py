@@ -38,9 +38,15 @@ async def upload(uploaded_file: UploadFile):
     id = uuid.uuid4()
     suffix = Path(uploaded_file.filename).suffix
     file_name = str(id) + suffix
-    with open(f"storage/{file_name}", "wb+") as file_object:
-        file_object.write(uploaded_file.file.read())
-    return {"file_name": file_name}
+    file_size = uploaded_file.size
+    if file_size/(2**30) >= 1:
+        raise HTTPException(status_code=400, detail="File size is too big")
+    if suffix == ".csv" or suffix == ".tsv" or suffix == ".xlsx":
+        with open(f"storage/{file_name}", "wb+") as file_object:
+            file_object.write(uploaded_file.file.read())
+        return {"file_name": file_name, "file_size": file_size}
+    else:
+        raise HTTPException(status_code=400, detail="Unacceptable data format")
 @app.get("/headers/{file_name}")
 async def get_headers(file_name: str):
     file_path = f"storage/{file_name}"

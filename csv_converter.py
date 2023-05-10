@@ -12,21 +12,31 @@ class ConverterInterface:
         pass
 
     def get_headers(self, file_path: str) -> str:
-        headers: Dict[str, str] = {}
         as_dict = dict[str, Iterable]
         extension = Path(file_path).suffix
 
         if extension == ".xlsx":
-            as_dict = pandas.read_excel(file_path).to_dict()
+            headers: Dict[str, Dict[str, str]] = {}
+            excel_file = pandas.ExcelFile(file_path)
+            pages = excel_file.sheet_names
+            for i in pages:
+                headers[i] = {}
+                excel_data_df = pandas.read_excel(excel_file, i)
+                json_dict = excel_data_df.to_dict()
+                for key in json_dict.keys():
+                    headers[i][key] = type(json_dict[key][0]).__name__
+            return dumps(headers, indent=4)
+
         elif extension == ".csv" or extension == ".tsv":
             as_dict = pandas.read_csv(file_path).to_dict().keys()
+            headers: Dict[str, str] = {}
 
-        keys = as_dict.keys()
+            keys = as_dict.keys()
 
-        for key in keys:
-            headers[key] = type(as_dict[key][0]).__name__
+            for key in keys:
+                headers[key] = type(as_dict[key][0]).__name__
 
-        return dumps(headers, indent=4)
+            return dumps(headers, indent=4)
 class CsvConverter(ConverterInterface):
     def convert_to_json(self, file_path: str) -> str:
         csv_data_df = pandas.read_csv(file_path)
