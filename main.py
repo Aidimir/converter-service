@@ -14,24 +14,29 @@ from fastapi.middleware.cors import CORSMiddleware
 uploads_description = """
 Uploads file on the server. The **extension validation** logic is also here.\n
 supported extensions: .xlsx, .csv, .tsv.
+Expected output structure: \n
+    {\n
+        "file_name": "fee4b29c.xlsx",\n
+        "file_size": 1000 (in bytes)\n
+    }
 """
 
 get_headers_description = """
 Fetches columns data types for each page of document.\n
-expected output structure:\n 
-                {\n
-                    "page_name1": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"},\n
-                    "page_name2": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"}\n
-                }
+Expected output structure:\n 
+    {\n
+        "page_name1": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"},\n
+        "page_name2": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"}\n
+    }
 """
 
 convert_description = """
 Converts files to json. If request contain convert parameters will change columns data-type.\n
-parameters structure:\n 
-                {\n
-                    "page_name1": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"},\n
-                    "page_name2": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"}\n
-                }
+Parameters structure:\n 
+    {\n
+        "page_name1": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"},\n
+        "page_name2": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"}\n
+    }
 """
 
 tags_metadata = [
