@@ -25,7 +25,7 @@ class ConverterInterface:
                 json_dict = excel_data_df.to_dict()
                 for key in json_dict.keys():
                     headers[i][key] = type(json_dict[key][0]).__name__
-            return dumps(headers, indent=4)
+            return loads(dumps(headers, indent=4))
 
         elif extension == ".csv" or extension == ".tsv":
             as_dict = pandas.read_csv(file_path).to_dict().keys()
@@ -36,7 +36,7 @@ class ConverterInterface:
             for key in keys:
                 headers[key] = type(as_dict[key][0]).__name__
 
-            return dumps(headers, indent=4)
+            return loads(dumps(headers, indent=4))
 class CsvConverter(ConverterInterface):
     def convert_to_json(self, file_path: str) -> str:
         csv_data_df = pandas.read_csv(file_path)
@@ -51,4 +51,4 @@ class CsvConverter(ConverterInterface):
                 val = parameters.params_dict[key](list(csv_dict[key].values())[i])
                 csv_dict[key][i] = val
 
-        return dumps(csv_dict, indent=4)
+        return loads(dumps(csv_dict, indent=4))

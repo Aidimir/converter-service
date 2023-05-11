@@ -11,7 +11,7 @@ class ExcelConverter(ConverterInterface):
         pages_dict: Dict[str, str] = {}
         for i in pages:
             excel_data_df = pandas.read_excel(excel_file, i)
-            json_string = excel_data_df.to_json(indent=4)
+            json_string = loads(excel_data_df.to_json(indent=4))
             pages_dict[i] = json_string
 
         return pages_dict
