@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Press the green button in the gutter to run the script.
 uploads_description = """
 Uploads file on the server. The **extension validation** logic is also here.\n
-supported extensions: .xlsx, .csv, .tsv.
+Supported extensions: .xlsx, .csv, .tsv.\n
 Expected output structure: \n
     {\n
         "file_name": "fee4b29c.xlsx",\n
