@@ -1,14 +1,9 @@
-import io
+from typing import Union
 import uuid
-
-from excel_converter import ExcelConverter
-from models.convert_param_model import ConvertParameters
 import main_converter
-from json import loads, dumps
 from pathlib import Path
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
 # This is a sample Python script.
 
 # Press ⌃R to execute it or replace it with your code.
@@ -16,7 +11,60 @@ from fastapi.responses import FileResponse, Response
 
 
 # Press the green button in the gutter to run the script.
-app = FastAPI()
+uploads_description = """
+Uploads file on the server. The **extension validation** logic is also here.\n
+supported extensions: .xlsx, .csv, .tsv.
+"""
+
+get_headers_description = """
+Fetches columns data types for each page of document.\n
+expected output structure:\n 
+                {\n
+                    "page_name1": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"},\n
+                    "page_name2": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"}\n
+                }
+"""
+
+convert_description = """
+Converts files to json. If request contain convert parameters will change columns data-type.\n
+parameters structure:\n 
+                {\n
+                    "page_name1": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"},\n
+                    "page_name2": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"}\n
+                }
+"""
+
+tags_metadata = [
+    {
+        "name": "upload",
+        "description": uploads_description,
+    },
+    {
+        "name": "headers",
+        "description": get_headers_description,
+    },
+    {
+        "name": "convert",
+        "description": convert_description,
+    },
+]
+
+description = """
+ConverterService API made to convert xlsx, csv and tsv files to json. 🚀
+
+## Converting
+
+You will be able to:
+
+* **Simple json convert**.
+* **Convert to json with type parameters**.
+"""
+
+app = FastAPI(title="ConverterService",
+    description=description,
+    version="0.0.1",
+    openapi_tags=tags_metadata,)
+
 origins = [
     "http://localhost",
     "http://localhost:8080",
@@ -33,7 +81,7 @@ app.add_middleware(
 async def root():
     print("welcome")
 
-@app.post("/upload")
+@app.post("/upload", tags=["upload"])
 async def upload(uploaded_file: UploadFile):
     id = uuid.uuid4()
     suffix = Path(uploaded_file.filename).suffix
@@ -47,7 +95,7 @@ async def upload(uploaded_file: UploadFile):
         return {"file_name": file_name, "file_size": file_size}
     else:
         raise HTTPException(status_code=400, detail="Unacceptable data format")
-@app.get("/headers/{file_name}")
+@app.get("/headers/{file_name}", tags=["headers"])
 async def get_headers(file_name: str):
     file_path = f"storage/{file_name}"
     if not Path(file_path).exists():
@@ -55,8 +103,8 @@ async def get_headers(file_name: str):
     converter = main_converter.Converter()
     return converter.get_headers(file_path=file_path)
 
-@app.get("/convert/{file_name}")
-async def convert_to_json(file_name: str):
+@app.get("/convert/{file_name}", tags=["convert"])
+async def convert_to_json(file_name: str, parameters: Union[str, None] = None):
     file_path = f"storage/{file_name}"
     if not Path(file_path).exists():
         raise HTTPException(status_code=400, detail="No such file or directory")
