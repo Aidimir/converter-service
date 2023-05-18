@@ -24,5 +24,4 @@ class ExcelConverter(ConverterInterface):
             for i in range(0, len(list(excel_dict[key].values()))):
                 val = parameters.params_dict[key](list(excel_dict[key].values())[i])
                 excel_dict[key][i] = val
-
-        return dumps(excel_dict, indent=4)
+        return dumps(excel_dict, indent="\n")
