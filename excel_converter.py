@@ -1,7 +1,7 @@
 from csv_converter import ConverterInterface
 from models.convert_param_model import ConvertParameters
 import pandas
-from json import dumps, loads
+from json import dumps, dump, loads
 from typing import Dict
 
 class ExcelConverter(ConverterInterface):
@@ -11,7 +11,8 @@ class ExcelConverter(ConverterInterface):
         pages_dict: Dict[str, str] = {}
         for i in pages:
             excel_data_df = pandas.read_excel(excel_file, i)
-            json_string = loads(excel_data_df.to_json(indent=4))
+            excel_data_df = excel_data_df.dropna(how="all")
+            json_string = loads(excel_data_df.to_json(indent=4, orient="records"))
             pages_dict[i] = json_string
 
         return pages_dict
@@ -24,4 +25,6 @@ class ExcelConverter(ConverterInterface):
             for i in range(0, len(list(excel_dict[key].values()))):
                 val = parameters.params_dict[key](list(excel_dict[key].values())[i])
                 excel_dict[key][i] = val
-        return dumps(excel_dict, indent="\n")
+        dataframe = pandas.DataFrame.from_dict(excel_dict)
+        json_string = dataframe.to_json(indent=4, orient="records")
+        return json_string

@@ -28,7 +28,7 @@ class ConverterInterface:
             return loads(dumps(headers, indent=4))
 
         elif extension == ".csv" or extension == ".tsv":
-            as_dict = pandas.read_csv(file_path).to_dict().keys()
+            as_dict = pandas.read_csv(file_path, encoding="ISO-8859-1").to_dict()
             headers: Dict[str, str] = {}
 
             keys = as_dict.keys()
@@ -39,16 +39,21 @@ class ConverterInterface:
             return loads(dumps(headers, indent=4))
 class CsvConverter(ConverterInterface):
     def convert_to_json(self, file_path: str) -> str:
-        csv_data_df = pandas.read_csv(file_path)
-        json_str = csv_data_df.to_json(indent=4)
+        csv_data_df = pandas.read_csv(file_path, encoding="ISO-8859-1")
+        json_str = csv_data_df.to_json(indent=4, orient="records")
         return loads(json_str)
 
     def convert_to_json_with_parameters(self, file_path: str, parameters: ConvertParameters) -> str:
-        csv_data_df = pandas.read_csv(file_path)
-        csv_dict = csv_data_df.to_dict()
-        for key in parameters.params_dict.keys():
-            for i in range(0, len(list(csv_dict[key].values()))):
-                val = parameters.params_dict[key](list(csv_dict[key].values())[i])
-                csv_dict[key][i] = val
+        if len(parameters.params_dict.values()) == 1:
+            csv_data_df = pandas.read_csv(file_path, encoding="ISO-8859-1")
+            csv_dict = csv_data_df.to_dict()
+            for key in parameters.params_dict.keys():
+                for i in range(0, len(list(csv_dict[key].values()))):
+                    val = parameters.params_dict[key](list(csv_dict[key].values())[i])
+                    csv_dict[key][i] = val
+            dataframe = pandas.DataFrame.from_dict(csv_dict)
+            json_string = dataframe.to_json(indent=4, orient="records")
 
-        return loads(dumps(csv_dict, indent=4))
+            return json_string
+        else:
+            return self.convert_to_json(file_path)
