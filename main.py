@@ -4,13 +4,24 @@ import main_converter
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-# This is a sample Python script.
+import arrow
+import os
+import threading
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+
+def clear_storage():
+    threading.Timer(interval=3600.0, function=clear_storage).start()
+    filesPath = "storage/"
+
+    criticalTime = arrow.now().shift(hours=-1)
+
+    for item in Path(filesPath).glob('*'):
+        if item.is_file():
+            itemTime = arrow.get(item.stat().st_mtime)
+            if itemTime < criticalTime:
+                os.remove(item.absolute())
 
 
-# Press the green button in the gutter to run the script.
 uploads_description = """
 Uploads file on the server. The **extension validation** logic is also here.\n
 Supported extensions: .xlsx, .csv, .tsv.\n
@@ -82,6 +93,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+clear_storage()
 @app.get("/")
 async def root():
     print("welcome")
