@@ -1,6 +1,6 @@
 uvicorn==0.22.0
 fastapi==0.95.2
-pandas==1.15.0
+pandas
 arrow==1.2.3
 python-multipart==0.0.6
 openpyxl==3.1.2
