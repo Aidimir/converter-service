@@ -104,7 +104,6 @@ app = FastAPI(title="ConverterService",
               # docs_url=None,
               redoc_url=None,
               )
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 
 origins = [
@@ -174,3 +173,5 @@ async def convert_to_json(file_name: str, parameters: Union[Dict, None] = None):
         str_json = converter.convert_to_json_with_parameters(file_path=file_path, parameters=params)
         return str_json
 
+
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
