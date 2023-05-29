@@ -101,7 +101,11 @@ app = FastAPI(title="ConverterService",
               docs_url=None,
               redoc_url=None,)
 
-origins = ["*"]
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+    "*",
+]
 
 app.add_middleware(
     CORSMiddleware,
