@@ -2,6 +2,7 @@ from typing import Union
 import uuid
 import main_converter
 from pathlib import Path
+from pydantic import BaseModel
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import arrow
@@ -9,46 +10,62 @@ import os
 import threading
 
 
+class HeaderResponseModel(BaseModel):
+    sheet_name: dict[str,str]
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "sheet1": {"price": "int", "title": "str"}
+            }
+        }
+
+
+class UploadResponseModel(BaseModel):
+    file_name: str
+    file_size: int
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "file_name": "ew2ewsr31rdsd.xlsl",
+                "file_size": "80000",
+            }
+        }
+
+
+class ConvertResponseModel(BaseModel):
+    sheet_name: dict[str,str]
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "sheet1": {"price": "10", "title": "apple", "is_cheap": "true" },
+                "sheet2": {"price": "0", "title": "ban", "is_cheap": "false" },
+            }
+        }
+
 def clear_storage():
     threading.Timer(interval=3600.0, function=clear_storage).start()
-    filesPath = "storage/"
+    files_path = "storage/"
 
-    criticalTime = arrow.now().shift(hours=-1)
+    critical_time = arrow.now().shift(hours=-1)
 
-    for item in Path(filesPath).glob('*'):
+    for item in Path(files_path).glob('*'):
         if item.is_file():
             itemTime = arrow.get(item.stat().st_mtime)
-            if itemTime < criticalTime:
+            if itemTime < critical_time:
                 os.remove(item.absolute())
 
 
 uploads_description = """
 Uploads file on the server. The **extension validation** logic is also here.\n
 Supported extensions: .xlsx, .csv, .tsv.\n
-Expected output structure: \n
-    {\n
-        "file_name": "fee4b29c.xlsx",\n
-        "file_size": 1000 (in bytes)\n
-    }
 """
 
-get_headers_description = """
-Fetches columns data types for each page of document.\n
-Expected output structure:\n 
-    {\n
-        "page_name1": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"},\n
-        "page_name2": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"}\n
-    }
-"""
+get_headers_description = "Fetches columns data types for each page of document."
 
-convert_description = """
-Converts files to json. If request contain convert parameters will change columns data-type.\n
-Parameters structure:\n 
-    {\n
-        "page_name1": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"},\n
-        "page_name2": {"column1_name": "int", "column2_name": "str", "column3_name": "bool"}\n
-    }
-"""
+convert_description = "Converts files to json. If request contain convert parameters will change columns data-type."
 
 tags_metadata = [
     {
@@ -76,10 +93,13 @@ You will be able to:
 * **Convert to json with type parameters**.
 """
 
+
 app = FastAPI(title="ConverterService",
-    description=description,
-    version="0.0.1",
-    openapi_tags=tags_metadata,)
+              description=description,
+              version="0.0.1",
+              openapi_tags=tags_metadata,
+              docs_url=None,
+              redoc_url=None,)
 
 origins = ["*"]
 
@@ -96,7 +116,7 @@ clear_storage()
 async def root():
     print("welcome")
 
-@app.post("/upload", tags=["upload"])
+@app.post("/upload", response_model=UploadResponseModel, tags=["upload"])
 async def upload(uploaded_file: UploadFile):
     id = uuid.uuid4()
     suffix = Path(uploaded_file.filename).suffix
@@ -110,7 +130,7 @@ async def upload(uploaded_file: UploadFile):
         return {"file_name": file_name, "file_size": file_size}
     else:
         raise HTTPException(status_code=400, detail="Unacceptable data format")
-@app.get("/headers/{file_name}", tags=["headers"])
+@app.get("/headers/{file_name}", response_model=HeaderResponseModel,tags=["headers"])
 async def get_headers(file_name: str):
     file_path = f"storage/{file_name}"
     if not Path(file_path).exists():
@@ -118,7 +138,8 @@ async def get_headers(file_name: str):
     converter = main_converter.Converter()
     return converter.get_headers(file_path=file_path)
 
-@app.get("/convert/{file_name}", tags=["convert"])
+
+@app.get("/convert/{file_name}", response_model=ConvertResponseModel, tags=["convert"])
 async def convert_to_json(file_name: str, parameters: Union[str, None] = None):
     file_path = f"storage/{file_name}"
     if not Path(file_path).exists():
