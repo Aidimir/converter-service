@@ -99,11 +99,13 @@ app = FastAPI(title="ConverterService",
               version="0.0.1",
               openapi_tags=tags_metadata,
               docs_url=None,
-              redoc_url=None,)
+              redoc_url=None,
+              )
 
 origins = [
     "http://localhost",
     "http://localhost:8080",
+    "http://localhost:4000",
     "*",
 ]
 
@@ -134,7 +136,7 @@ async def upload(uploaded_file: UploadFile):
         return {"file_name": file_name, "file_size": file_size}
     else:
         raise HTTPException(status_code=400, detail="Unacceptable data format")
-@app.get("/headers/{file_name}", response_model=HeaderResponseModel,tags=["headers"])
+@app.get("/headers/{file_name}", response_model=HeaderResponseModel, tags=["headers"])
 async def get_headers(file_name: str):
     file_path = f"storage/{file_name}"
     if not Path(file_path).exists():
