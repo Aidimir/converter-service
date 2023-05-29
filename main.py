@@ -4,6 +4,7 @@ import uuid
 import main_converter
 from pathlib import Path
 from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import arrow
@@ -100,9 +101,11 @@ app = FastAPI(title="ConverterService",
               description=description,
               version="0.0.1",
               openapi_tags=tags_metadata,
-              # docs_url=None,
+              docs_url=None,
               redoc_url=None,
               )
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
 
 origins = [
     "http://localhost",
