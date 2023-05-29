@@ -1,4 +1,5 @@
-from typing import Union
+from typing import Union, Dict, Any
+from datetime import datetime
 import uuid
 import main_converter
 from pathlib import Path
@@ -8,42 +9,43 @@ from fastapi.middleware.cors import CORSMiddleware
 import arrow
 import os
 import threading
+from models.convert_param_model import ConvertParameters
 
 
-class HeaderResponseModel(BaseModel):
-    sheet_name: dict[str,str]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "sheet1": {"price": "int", "title": "str"}
-            }
-        }
-
-
-class UploadResponseModel(BaseModel):
-    file_name: str
-    file_size: int
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "file_name": "ew2ewsr31rdsd.xlsl",
-                "file_size": "80000",
-            }
-        }
+# class HeaderResponseModel(BaseModel):
+#     sheet_name: dict[str,str]
+#
+#     class Config:
+#         schema_extra = {
+#             "example": {
+#                 "sheet1": {"price": "int", "title": "str"}
+#             }
+#         }
 
 
-class ConvertResponseModel(BaseModel):
-    sheet_name: dict[str,str]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "sheet1": {"price": "10", "title": "apple", "is_cheap": "true" },
-                "sheet2": {"price": "0", "title": "ban", "is_cheap": "false" },
-            }
-        }
+# class UploadResponseModel(BaseModel):
+#     file_name: str
+#     file_size: int
+#
+#     class Config:
+#         schema_extra = {
+#             "example": {
+#                 "file_name": "ew2ewsr31rdsd.xlsl",
+#                 "file_size": "80000",
+#             }
+#         }
+#
+#
+# class ConvertResponseModel(BaseModel):
+#     sheet_name: dict[str,str]
+#
+#     class Config:
+#         schema_extra = {
+#             "example": {
+#                 "sheet1": {"price": "10", "title": "apple", "is_cheap": "true" },
+#                 "sheet2": {"price": "0", "title": "ban", "is_cheap": "false" },
+#             }
+#         }
 
 def clear_storage():
     threading.Timer(interval=3600.0, function=clear_storage).start()
@@ -98,7 +100,7 @@ app = FastAPI(title="ConverterService",
               description=description,
               version="0.0.1",
               openapi_tags=tags_metadata,
-              docs_url=None,
+              # docs_url=None,
               redoc_url=None,
               )
 
@@ -123,7 +125,7 @@ clear_storage()
 async def root():
     print("welcome")
 
-@app.post("/upload", response_model=UploadResponseModel, tags=["upload"])
+@app.post("/upload", tags=["upload"])
 async def upload(uploaded_file: UploadFile):
     id = uuid.uuid4()
     suffix = Path(uploaded_file.filename).suffix
@@ -137,7 +139,7 @@ async def upload(uploaded_file: UploadFile):
         return {"file_name": file_name, "file_size": file_size}
     else:
         raise HTTPException(status_code=400, detail="Unacceptable data format")
-@app.get("/headers/{file_name}", response_model=HeaderResponseModel, tags=["headers"])
+@app.get("/headers/{file_name}", tags=["headers"])
 async def get_headers(file_name: str):
     file_path = f"storage/{file_name}"
     if not Path(file_path).exists():
@@ -146,11 +148,29 @@ async def get_headers(file_name: str):
     return converter.get_headers(file_path=file_path)
 
 
-@app.get("/convert/{file_name}", response_model=ConvertResponseModel, tags=["convert"])
-async def convert_to_json(file_name: str, parameters: Union[str, None] = None):
+@app.get("/convert/{file_name}", tags=["convert"])
+async def convert_to_json(file_name: str, parameters: Union[Dict, None] = None):
     file_path = f"storage/{file_name}"
     if not Path(file_path).exists():
         raise HTTPException(status_code=400, detail="No such file or directory")
     converter = main_converter.Converter()
-    str_json = converter.convert_to_json(file_path)
-    return str_json
+    if parameters == None:
+        str_json = converter.convert_to_json(file_path)
+        return str_json
+    else:
+        dict_with_classes: Dict[str, Any] = {}
+        for key in parameters:
+            if parameters[key] == "str":
+                dict_with_classes[key] = str
+            elif parameters[key] == "float":
+                dict_with_classes[key] = float
+            elif parameters[key] == "int":
+                dict_with_classes[key] = int
+            elif parameters[key] == "Timestamp":
+                dict_with_classes[key] = datetime
+            elif parameters[key] == "bool":
+                dict_with_classes[key] = bool
+        params = ConvertParameters(params_dict=dict_with_classes)
+        str_json = converter.convert_to_json_with_parameters(file_path=file_path, parameters=params)
+        return str_json
+
