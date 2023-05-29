@@ -101,7 +101,7 @@ app = FastAPI(title="ConverterService",
               description=description,
               version="0.0.1",
               openapi_tags=tags_metadata,
-              docs_url=None,
+              # docs_url=None,
               redoc_url=None,
               )
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
@@ -124,9 +124,6 @@ app.add_middleware(
 )
 
 clear_storage()
-@app.get("/")
-async def root():
-    print("welcome")
 
 @app.post("/upload", tags=["upload"])
 async def upload(uploaded_file: UploadFile):
