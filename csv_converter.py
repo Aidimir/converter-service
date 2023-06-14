@@ -2,7 +2,7 @@ from models.convert_param_model import ConvertParameters
 from pathlib import Path
 from json import dumps, loads
 import pandas
-from typing import Any, Iterable, List, Dict
+from typing import Dict, Union
 
 class ConverterInterface:
     def convert_to_json(self, file_path: str) -> str:
@@ -11,8 +11,15 @@ class ConverterInterface:
     def convert_to_json_with_parameters(self, file_path: str, parameters: ConvertParameters) -> str:
         pass
 
-    def get_headers(self, file_path: str) -> str:
-        as_dict = dict[str, Iterable]
+    def get_headers(self,
+                    file_path: Union[str, None] = None,
+                    string_version: Union[str, None] = None) -> str:
+        if string_version != None:
+            res = ""
+            for i in string_version:
+                res += f"\n{i}"
+            return res
+
         extension = Path(file_path).suffix
 
         if extension == ".xlsx":

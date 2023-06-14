@@ -1,6 +1,9 @@
 from typing import Union, Dict, Any
 from datetime import datetime
 import uuid
+
+import pandas
+from json import loads
 import main_converter
 from pathlib import Path
 from pydantic import BaseModel
@@ -10,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import arrow
 import os
 import threading
+from io import StringIO
 from models.convert_param_model import ConvertParameters
 
 
@@ -125,11 +129,36 @@ app.add_middleware(
 clear_storage()
 
 @app.post("/upload", tags=["upload"])
-async def upload(uploaded_file: UploadFile):
+async def upload(uploaded_file: Union[UploadFile, None] = None,
+                 string_version: Union[str, None] = None):
     id = uuid.uuid4()
-    suffix = Path(uploaded_file.filename).suffix
+    suffix = ""
+    file_size = 0
+    if uploaded_file == None and string_version != None:
+        file_size = len(string_version.encode('utf-8'))
+        csv_df: pandas.DataFrame
+        suffix = ".csv"
+        file_name = str(id) + suffix
+        separator = ","
+        # IF IS EXCEL TYPE - SEPARATOR IS "\t"
+        for i in string_version.splitlines():
+            if i.split(sep="\t") != 0 and i.split(sep="\t") >= i.split(sep=","):
+                separator = "\t"
+                break
+            elif i.split(sep=",") != 0 and i.split(sep=",") > i.split(sep="\t"):
+                separator = ","
+                break
+        csv_df = pandas.read_csv(StringIO(string_version), index_col=0, skipinitialspace=True, sep=separator)
+        # ELSE - SEPARATOR IS ","
+
+        csv_df.to_csv(f"storage/{file_name}")
+        return {"file_name": file_name, "file_size": file_size}
+    elif uploaded_file is None and string_version is None:
+        raise HTTPException(status_code=400, detail="Didn't find any source for converting")
+    elif uploaded_file != None:
+        suffix = Path(uploaded_file.filename).suffix
+        file_size = uploaded_file.size
     file_name = str(id) + suffix
-    file_size = uploaded_file.size
     if file_size/(2**30) >= 1:
         raise HTTPException(status_code=400, detail="File size is too big")
     if suffix == ".csv" or suffix == ".tsv" or suffix == ".xlsx":
@@ -148,26 +177,28 @@ async def get_headers(file_name: str):
 
 
 @app.get("/convert/{file_name}", tags=["convert"])
-async def convert_to_json(file_name: str, parameters: Union[Dict, None] = None):
+async def convert_to_json(file_name: str, parameters: Union[str, None] = None):
     file_path = f"storage/{file_name}"
     if not Path(file_path).exists():
         raise HTTPException(status_code=400, detail="No such file or directory")
     converter = main_converter.Converter()
-    if parameters == None:
+    if parameters is None:
         str_json = converter.convert_to_json(file_path)
         return str_json
     else:
-        dict_with_classes: Dict[str, Any] = {}
-        for key in parameters:
-            if parameters[key] == "str":
+        dict_parameters = loads(parameters)
+        print(dict_parameters)
+        dict_with_classes: Dict[str, str] = {}
+        for key in dict_parameters:
+            if dict_parameters[key] == "str":
                 dict_with_classes[key] = str
-            elif parameters[key] == "float":
+            elif dict_parameters[key] == "float":
                 dict_with_classes[key] = float
-            elif parameters[key] == "int":
+            elif dict_parameters[key] == "int":
                 dict_with_classes[key] = int
-            elif parameters[key] == "Timestamp":
+            elif dict_parameters[key] == "Timestamp":
                 dict_with_classes[key] = datetime
-            elif parameters[key] == "bool":
+            elif dict_parameters[key] == "bool":
                 dict_with_classes[key] = bool
         params = ConvertParameters(params_dict=dict_with_classes)
         str_json = converter.convert_to_json_with_parameters(file_path=file_path, parameters=params)
