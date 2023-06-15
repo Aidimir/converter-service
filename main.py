@@ -1,4 +1,4 @@
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, Annotated
 from datetime import datetime
 import uuid
 
@@ -8,7 +8,7 @@ import main_converter
 from pathlib import Path
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi import FastAPI, UploadFile, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 import arrow
 import os
@@ -128,36 +128,12 @@ app.add_middleware(
 
 clear_storage()
 
-@app.post("/upload", tags=["upload"])
-async def upload(uploaded_file: Union[UploadFile, None] = None,
-                 string_version: Union[str, None] = None):
-    id = uuid.uuid4()
-    suffix = ""
-    file_size = 0
-    if uploaded_file == None and string_version != None:
-        file_size = len(string_version.encode('utf-8'))
-        csv_df: pandas.DataFrame
-        suffix = ".csv"
-        file_name = str(id) + suffix
-        separator = ","
-        # IF IS EXCEL TYPE - SEPARATOR IS "\t"
-        for i in string_version.splitlines():
-            if i.split(sep="\t") != 0 and i.split(sep="\t") >= i.split(sep=","):
-                separator = "\t"
-                break
-            elif i.split(sep=",") != 0 and i.split(sep=",") > i.split(sep="\t"):
-                separator = ","
-                break
-        csv_df = pandas.read_csv(StringIO(string_version), index_col=0, skipinitialspace=True, sep=separator)
-        # ELSE - SEPARATOR IS ","
 
-        csv_df.to_csv(f"storage/{file_name}")
-        return {"file_name": file_name, "file_size": file_size}
-    elif uploaded_file is None and string_version is None:
-        raise HTTPException(status_code=400, detail="Didn't find any source for converting")
-    elif uploaded_file != None:
-        suffix = Path(uploaded_file.filename).suffix
-        file_size = uploaded_file.size
+@app.post("/upload", tags=["upload"])
+async def upload(uploaded_file: UploadFile):
+    id = uuid.uuid4()
+    suffix = Path(uploaded_file.filename).suffix
+    file_size = uploaded_file.size
     file_name = str(id) + suffix
     if file_size/(2**30) >= 1:
         raise HTTPException(status_code=400, detail="File size is too big")
@@ -167,6 +143,28 @@ async def upload(uploaded_file: Union[UploadFile, None] = None,
         return {"file_name": file_name, "file_size": file_size}
     else:
         raise HTTPException(status_code=400, detail="Unacceptable data format")
+
+@app.post("/upload/text")
+async def upload_text(body: str = Body(..., media_type="text/plain")):
+    id = uuid.uuid4()
+    file_size = len(body.encode('utf-8'))
+    csv_df: pandas.DataFrame
+    suffix = ".csv"
+    file_name = str(id) + suffix
+    separator = "\t"
+    for i in body.splitlines():
+        print(len(i.split("\t")))
+        if i.split(sep="\t") != 0 and i.split(sep="\t") <= i.split(sep=","):
+            separator = "\t"
+            break
+        elif i.split(sep=",") != 0 and i.split(sep=",") < i.split(sep="\t"):
+            separator = ","
+            break
+    csv_df = pandas.read_csv(StringIO(body), index_col=0, skipinitialspace=True, sep=separator)
+    print(loads(csv_df.to_json(indent=4, orient="records")))
+    csv_df.to_csv(f"storage/{file_name}")
+    return {"file_name": file_name, "file_size": file_size, "result": loads(csv_df.to_json(indent=4, orient="records"))}
+
 @app.get("/headers/{file_name}", tags=["headers"])
 async def get_headers(file_name: str):
     file_path = f"storage/{file_name}"
@@ -187,7 +185,6 @@ async def convert_to_json(file_name: str, parameters: Union[str, None] = None):
         return str_json
     else:
         dict_parameters = loads(parameters)
-        print(dict_parameters)
         dict_with_classes: Dict[str, str] = {}
         for key in dict_parameters:
             if dict_parameters[key] == "str":
@@ -200,6 +197,8 @@ async def convert_to_json(file_name: str, parameters: Union[str, None] = None):
                 dict_with_classes[key] = datetime
             elif dict_parameters[key] == "bool":
                 dict_with_classes[key] = bool
+            elif dict_parameters[key] == "array":
+                dict_with_classes[key] = list
         params = ConvertParameters(params_dict=dict_with_classes)
         str_json = converter.convert_to_json_with_parameters(file_path=file_path, parameters=params)
         return str_json
