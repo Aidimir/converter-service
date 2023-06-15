@@ -218,14 +218,14 @@ def converter_float(col):
         res = float(col)
         return res
     except:
-        return 0.0
+        return None
 
 def converter_int(col):
     try:
         res = int(col)
         return res
     except:
-        return 0
+        return None
 
 def converter_timestamp(col):
     try:
@@ -273,4 +273,4 @@ def converter_array(col) -> Union[tuple, None]:
             print([col])
             return tuple([col])
     except:
-        return tuple()
+        return None
