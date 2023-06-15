@@ -1,9 +1,10 @@
+import numbers
 from typing import Union, Dict, Any, Annotated
 from datetime import datetime
 import uuid
 
 import pandas
-from json import loads
+from json import loads, dumps
 import main_converter
 from pathlib import Path
 from pydantic import BaseModel
@@ -190,20 +191,87 @@ async def convert_to_json(file_name: str,
             dict_with_classes[page] = {}
             for key in dict_parameters[page]:
                 if dict_parameters[page][key] == "str":
-                    dict_with_classes[page][key] = str
+                    dict_with_classes[page][key] = converter_str
                 elif dict_parameters[page][key] == "float":
-                    dict_with_classes[page][key] = float
+                    dict_with_classes[page][key] = converter_float
                 elif dict_parameters[page][key] == "int":
-                    dict_with_classes[page][key] = int
+                    dict_with_classes[page][key] = converter_int
                 elif dict_parameters[page][key] == "Timestamp":
-                    dict_with_classes[page][key] = datetime
+                    dict_with_classes[page][key] = converter_timestamp
                 elif dict_parameters[page][key] == "bool":
-                    dict_with_classes[page][key] = bool
+                    dict_with_classes[page][key] = converter_bool
                 elif dict_parameters[page][key] == "array":
-                    dict_with_classes[page][key] = list
+                    dict_with_classes[page][key] = converter_array
+                else:
+                    dict_with_classes[page][key] = None
         params = ConvertParameters(params_dict=dict_with_classes)
         str_json = converter.convert_to_json_with_parameters(file_path=file_path, parameters=params, null_replacing=null_replacing)
         return str_json
 
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+def converter_str(col):
+    return str(col)
+
+def converter_float(col):
+    try:
+        res = float(col)
+        return res
+    except:
+        return 0.0
+
+def converter_int(col):
+    try:
+        res = int(col)
+        return res
+    except:
+        return 0
+
+def converter_timestamp(col):
+    try:
+        res = datetime(col)
+        return res
+    except:
+        return None
+
+def converter_bool(col):
+    try:
+        if col is None:
+            return False
+        elif col is str:
+            if col == "0":
+                return False
+            elif col == "1":
+                return True
+            elif str(col).lower() == "yes":
+                return True
+            elif str(col).lower() == "no":
+                return False
+            else:
+                return False
+    except:
+        return None
+
+def converter_array(col) -> Union[tuple, None]:
+    try:
+        if col is None:
+            return tuple()
+        elif type(col) is str:
+            if str(col.split(",")[0]).isnumeric():
+                dict_res = []
+                for i in range(len(str(col).split(sep=","))):
+                    dict_res.append(float(str(col).split(sep=",")[i]))
+                print(dict_res)
+                return tuple(dict_res)
+            else:
+                dict_res = []
+                for i in range(len(str(col).split(sep=","))):
+                    dict_res.append(str(col).split(sep=",")[i])
+                print(dict_res)
+                return tuple(dict_res)
+        else:
+            print([col])
+            return tuple([col])
+    except:
+        return tuple()

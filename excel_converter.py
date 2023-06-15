@@ -26,17 +26,15 @@ class ExcelConverter(ConverterInterface):
         pages_dict: Dict[str, str] = {}
         for page in pages:
             page_df = pandas.read_excel(excel_file, page)
-            if null_replacing is not None:
-                page_df.fillna(null_replacing, inplace=True)
             if page in parameters.params_dict:
-                excel_dict = page_df.to_dict()
-                for param_row_name in parameters.params_dict[page]:
-                    for j in range(len(excel_dict[param_row_name])):
-                        val = parameters.params_dict[page][param_row_name](excel_dict[param_row_name][j])
-                        excel_dict[param_row_name][j] = val
-                pages_dict[page] = loads(pandas.DataFrame.from_dict(excel_dict).to_json(indent=4, orient="records"))
+                page_df = pandas.read_excel(excel_file, page, converters=parameters.params_dict[page])
+                if null_replacing is not None:
+                    page_df.fillna(null_replacing, inplace=True)
+                pages_dict[page] = loads(page_df.to_json(indent=4, orient="records"))
             else:
-                json_string = loads(pandas.read_excel(excel_file, page).to_json(indent=4, orient="records"))
+                if null_replacing is not None:
+                    page_df.fillna(null_replacing, inplace=True)
+                json_string = loads(page_df.to_json(indent=4, orient="records"))
                 pages_dict[page] = json_string
         json_string = dumps(pages_dict)
         return loads(json_string)
