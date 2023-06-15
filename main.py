@@ -153,7 +153,6 @@ async def upload_text(body: str = Body(..., media_type="text/plain")):
     file_name = str(id) + suffix
     separator = "\t"
     for i in body.splitlines():
-        print(len(i.split("\t")))
         if i.split(sep="\t") != 0 and i.split(sep="\t") <= i.split(sep=","):
             separator = "\t"
             break
@@ -161,7 +160,6 @@ async def upload_text(body: str = Body(..., media_type="text/plain")):
             separator = ","
             break
     csv_df = pandas.read_csv(StringIO(body), index_col=0, skipinitialspace=True, sep=separator)
-    print(loads(csv_df.to_json(indent=4, orient="records")))
     csv_df.to_csv(f"storage/{file_name}")
     return {"file_name": file_name, "file_size": file_size, "result": loads(csv_df.to_json(indent=4, orient="records"))}
 
@@ -175,32 +173,36 @@ async def get_headers(file_name: str):
 
 
 @app.get("/convert/{file_name}", tags=["convert"])
-async def convert_to_json(file_name: str, parameters: Union[str, None] = None):
+async def convert_to_json(file_name: str,
+                          parameters: Union[str, None] = None,
+                          null_replacing: Union[Any, None] = None):
     file_path = f"storage/{file_name}"
     if not Path(file_path).exists():
         raise HTTPException(status_code=400, detail="No such file or directory")
     converter = main_converter.Converter()
     if parameters is None:
-        str_json = converter.convert_to_json(file_path)
+        str_json = converter.convert_to_json(file_path, null_replacing=null_replacing)
         return str_json
     else:
         dict_parameters = loads(parameters)
-        dict_with_classes: Dict[str, str] = {}
-        for key in dict_parameters:
-            if dict_parameters[key] == "str":
-                dict_with_classes[key] = str
-            elif dict_parameters[key] == "float":
-                dict_with_classes[key] = float
-            elif dict_parameters[key] == "int":
-                dict_with_classes[key] = int
-            elif dict_parameters[key] == "Timestamp":
-                dict_with_classes[key] = datetime
-            elif dict_parameters[key] == "bool":
-                dict_with_classes[key] = bool
-            elif dict_parameters[key] == "array":
-                dict_with_classes[key] = list
+        dict_with_classes: Dict[str, Dict[str, Any]] = {}
+        for page in dict_parameters:
+            dict_with_classes[page] = {}
+            for key in dict_parameters[page]:
+                if dict_parameters[page][key] == "str":
+                    dict_with_classes[page][key] = str
+                elif dict_parameters[page][key] == "float":
+                    dict_with_classes[page][key] = float
+                elif dict_parameters[page][key] == "int":
+                    dict_with_classes[page][key] = int
+                elif dict_parameters[page][key] == "Timestamp":
+                    dict_with_classes[page][key] = datetime
+                elif dict_parameters[page][key] == "bool":
+                    dict_with_classes[page][key] = bool
+                elif dict_parameters[page][key] == "array":
+                    dict_with_classes[page][key] = list
         params = ConvertParameters(params_dict=dict_with_classes)
-        str_json = converter.convert_to_json_with_parameters(file_path=file_path, parameters=params)
+        str_json = converter.convert_to_json_with_parameters(file_path=file_path, parameters=params, null_replacing=null_replacing)
         return str_json
 
 
