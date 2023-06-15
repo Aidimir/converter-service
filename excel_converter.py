@@ -11,7 +11,7 @@ class ExcelConverter(ConverterInterface):
         pages_dict: Dict[str, str] = {}
         for i in pages:
             excel_data_df = pandas.read_excel(excel_file, i)
-            if null_replacing != None:
+            if null_replacing is not None:
                 excel_data_df.fillna(null_replacing, inplace=True)
             else:
                 excel_data_df = excel_data_df.dropna(how="all")
@@ -26,7 +26,7 @@ class ExcelConverter(ConverterInterface):
         pages_dict: Dict[str, str] = {}
         for page in pages:
             page_df = pandas.read_excel(excel_file, page)
-            if null_replacing != None:
+            if null_replacing is not None:
                 page_df.fillna(null_replacing, inplace=True)
             if page in parameters.params_dict:
                 excel_dict = page_df.to_dict()

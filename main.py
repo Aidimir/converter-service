@@ -161,7 +161,7 @@ async def upload_text(body: str = Body(..., media_type="text/plain")):
             break
     csv_df = pandas.read_csv(StringIO(body), index_col=0, skipinitialspace=True, sep=separator)
     csv_df.to_csv(f"storage/{file_name}")
-    return {"file_name": file_name, "file_size": file_size, "result": loads(csv_df.to_json(indent=4, orient="records"))}
+    return {"file_name": file_name, "file_size": file_size}
 
 @app.get("/headers/{file_name}", tags=["headers"])
 async def get_headers(file_name: str):

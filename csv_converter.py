@@ -14,7 +14,7 @@ class ConverterInterface:
     def get_headers(self,
                     file_path: Union[str, None] = None,
                     string_version: Union[str, None] = None) -> str:
-        if string_version != None:
+        if string_version is not None:
             res = ""
             for i in string_version:
                 res += f"\n{i}"
@@ -35,19 +35,20 @@ class ConverterInterface:
             return loads(dumps(headers, indent=4))
 
         elif extension == ".csv" or extension == ".tsv":
-            as_dict = pandas.read_csv(file_path, encoding="ISO-8859-1").to_dict()
-            headers: Dict[str, str] = {}
+            as_dict = pandas.read_csv(file_path, encoding="ISO-8859-1", skipinitialspace=True).to_dict()
+            headers: Dict[str, Dict[str, str]] = {}
+            headers["csv page"] = {}
 
-            keys = as_dict.keys()
-
-            for key in keys:
-                headers[key] = type(as_dict[key][0]).__name__
+            for key in as_dict:
+                headers["csv page"][key] = type(as_dict[key][0]).__name__
 
             return loads(dumps(headers, indent=4))
+
+
 class CsvConverter(ConverterInterface):
     def convert_to_json(self, file_path: str, null_replacing: Union[Any, None] = None) -> str:
         csv_data_df = pandas.read_csv(file_path, encoding="ISO-8859-1")
-        if null_replacing != None:
+        if null_replacing is not None:
             csv_data_df.fillna(null_replacing, inplace=True)
         json_str = csv_data_df.to_json(indent=4, orient="records")
         return loads(json_str)
@@ -56,7 +57,7 @@ class CsvConverter(ConverterInterface):
         if len(parameters.params_dict.values()) == 1:
             params_dict = list(parameters.params_dict.values())[0]
             csv_data_df = pandas.read_csv(file_path, encoding="ISO-8859-1")
-            if null_replacing != None:
+            if null_replacing is not None:
                 csv_data_df.fillna(null_replacing, inplace=True)
             csv_dict = csv_data_df
             for key in params_dict:
