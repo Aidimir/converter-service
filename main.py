@@ -247,6 +247,8 @@ def converter_bool(col):
                 return True
             elif str(col).lower() == "no":
                 return False
+        elif type(col) is bool:
+            return col
         else:
             return None
     except:
@@ -261,16 +263,13 @@ def converter_array(col) -> Union[tuple, None]:
                 dict_res = []
                 for i in range(len(str(col).split(sep=","))):
                     dict_res.append(float(str(col).split(sep=",")[i]))
-                print(dict_res)
                 return tuple(dict_res)
             else:
                 dict_res = []
                 for i in range(len(str(col).split(sep=","))):
                     dict_res.append(str(col).split(sep=",")[i])
-                print(dict_res)
                 return tuple(dict_res)
         else:
-            print([col])
             return tuple([col])
     except:
         return None
