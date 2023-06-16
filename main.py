@@ -238,7 +238,7 @@ def converter_bool(col):
     try:
         if col is None:
             return False
-        elif col is str:
+        elif type(col) is str:
             if col == "0":
                 return False
             elif col == "1":
@@ -247,8 +247,8 @@ def converter_bool(col):
                 return True
             elif str(col).lower() == "no":
                 return False
-            else:
-                return False
+        else:
+            return None
     except:
         return None
 
